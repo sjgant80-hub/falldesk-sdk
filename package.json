@@ -1,0 +1,24 @@
+{
+  "name": "@ai-native-solutions/falldesk-sdk",
+  "version": "1.0.0",
+  "description": "FallDesk SDK · sovereign workstation primitives · LLM cascade, verticals taxonomy, category routing, prompt engine",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": ["src", "README.md", "LICENSE"],
+  "keywords": ["falldesk", "sovereign", "workstation", "llm-cascade", "webllm", "ollama"],
+  "license": "MIT",
+  "author": "AI-Native Solutions",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sjgant80-hub/falldesk-sdk.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FallDesk SDK · Playground</title>
+<style>
+:root{--void:#0b0a0f;--void-2:#13121a;--ink:#1a1922;--line:#2a2934;--cream:#e6e1d6;--cream-dim:#a8a395;--cream-muted:#6e6a5e;--brass:#b8974a;--amber:#ff8c00;--green:#4ade80;--red:#ef4444;--serif:Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--void);color:var(--cream);font:14px/1.55 var(--sans);padding:24px;min-height:100vh}
+h1{font-family:var(--serif);font-size:24px;color:var(--brass);margin-bottom:6px}
+.lede{color:var(--cream-dim);margin-bottom:20px;font-size:13px}
+.wrap{max-width:1000px;margin:0 auto}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.card{background:var(--void-2);border:1px solid var(--line);border-radius:5px;padding:16px 18px}
+.card h2{font-family:var(--serif);font-size:16px;margin-bottom:10px;color:var(--brass)}
+.row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+input,select,textarea{background:var(--ink);border:1px solid var(--line);color:var(--cream);border-radius:3px;padding:7px 10px;font:13px var(--sans);flex:1;min-width:0}
+button{background:var(--brass);color:var(--void);border:none;border-radius:3px;padding:7px 14px;font:12px var(--mono);letter-spacing:.05em;text-transform:uppercase;cursor:pointer;font-weight:700}
+button:hover{background:var(--amber)}
+pre{background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:12px;font:11px/1.5 var(--mono);color:var(--cream-dim);overflow:auto;max-height:280px;white-space:pre-wrap;word-break:break-word}
+.chip{display:inline-block;padding:3px 10px;border-radius:12px;border:1px solid var(--line);font:10px var(--mono);color:var(--cream-dim);margin:2px}
+.chip.ok{border-color:var(--green);color:var(--green)}
+.chip.skip{border-color:var(--cream-muted);color:var(--cream-muted)}
+footer{text-align:center;margin-top:24px;color:var(--cream-muted);font-size:11px}
+a{color:var(--brass)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FallDesk SDK · Playground</h1>
+  <p class="lede">Exercise the primitives in-browser. No network, no telemetry.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>categorize()</h2>
+      <div class="row">
+        <input id="catName" placeholder="app name (e.g. fallhr)" value="fallhr">
+        <input id="catBundle" placeholder="bundle (optional)" value="hr-firm">
+      </div>
+      <button onclick="doCategorize()">Route</button>
+      <pre id="catOut"></pre>
+    </div>
+
+    <div class="card">
+      <h2>planCascade()</h2>
+      <div class="row">
+        <label><input type="checkbox" id="hasGpu"> WebGPU</label>
+        <label><input type="checkbox" id="groqKey" checked> Groq key</label>
+      </div>
+      <button onclick="doPlan()">Plan</button>
+      <div id="planOut"></div>
+    </div>
+
+    <div class="card">
+      <h2>filterCatalog()</h2>
+      <div class="row">
+        <select id="filtCat">
+          <option value="all">all</option>
+          <option value="personal">personal</option>
+          <option value="business">business</option>
+          <option value="sovereignty">sovereignty</option>
+          <option value="guild">guild</option>
+          <option value="entertainment">entertainment</option>
+        </select>
+        <input id="filtQ" placeholder="query">
+      </div>
+      <button onclick="doFilter()">Filter</button>
+      <pre id="filtOut"></pre>
+    </div>
+
+    <div class="card">
+      <h2>buildUserPrompt()</h2>
+      <div class="row">
+        <input id="bpNeed" value="sovereign appointment book">
+        <input id="bpCat" value="business">
+      </div>
+      <button onclick="doPrompt()">Compose</button>
+      <pre id="bpOut"></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Verticals · Categories · Providers</h2>
+    <div id="taxonomy"></div>
+  </div>
+
+  <footer>MIT · <a href="https://github.com/sjgant80-hub/falldesk-sdk">github</a></footer>
+</div>
+
+<script type="module">
+import {
+  CATEGORIES, VERTICALS, PROVIDERS,
+  categorize, planCascade, filterCatalog, buildUserPrompt, FALLBACK_CATALOG
+} from '../src/index.js';
+
+window.doCategorize = () => {
+  const name = document.getElementById('catName').value;
+  const bundle = document.getElementById('catBundle').value;
+  document.getElementById('catOut').textContent =
+    JSON.stringify({ name, bundle, category: categorize({ name, bundle }) }, null, 2);
+};
+
+window.doPlan = async () => {
+  const plan = await planCascade({
+    providerConfig: {
+      webllm: { enabled: true },
+      ollama: { enabled: true },
+      groq: { enabled: document.getElementById('groqKey').checked, key: document.getElementById('groqKey').checked ? 'gsk_x' : '' }
+    },
+    hasWebGPU: document.getElementById('hasGpu').checked
+  });
+  document.getElementById('planOut').innerHTML =
+    plan.map(p => `<div class="chip ${p.status==='ready'?'ok':'skip'}">${p.name} · ${p.status}${p.reason?' · '+p.reason:''}</div>`).join('');
+};
+
+window.doFilter = () => {
+  const cat = document.getElementById('filtCat').value;
+  const q = document.getElementById('filtQ').value;
+  document.getElementById('filtOut').textContent =
+    JSON.stringify(filterCatalog(FALLBACK_CATALOG, { category: cat === 'all' ? null : cat, query: q }), null, 2);
+};
+
+window.doPrompt = () => {
+  const need = document.getElementById('bpNeed').value;
+  const cat = document.getElementById('bpCat').value;
+  document.getElementById('bpOut').textContent = buildUserPrompt(need, cat);
+};
+
+document.getElementById('taxonomy').innerHTML =
+  '<div><strong>Categories:</strong> ' + CATEGORIES.map(c => `<span class="chip">${c.label}</span>`).join('') + '</div>' +
+  '<div style="margin-top:8px"><strong>Verticals:</strong> ' + VERTICALS.map(v => `<span class="chip">${v}</span>`).join('') + '</div>' +
+  '<div style="margin-top:8px"><strong>Providers:</strong> ' + PROVIDERS.map(p => `<span class="chip">${p.name} · ${p.tier}</span>`).join('') + '</div>';
+
+// auto-fire once
+window.doCategorize(); window.doPlan(); window.doFilter(); window.doPrompt();
+</script>
+</body>
+</html>
